@@ -16,6 +16,7 @@ type Carte struct {
 	Grille     []string
 }
 
+// Charger lit et vérifie un fichier de carte.
 func Charger(chemin string) (Carte, error) {
 	contenu, err := os.ReadFile(chemin)
 	if err != nil {
@@ -51,7 +52,8 @@ func Charger(chemin string) (Carte, error) {
 			continue
 		}
 
-		if champs[0] == "NOM" {
+		switch champs[0] {
+		case "NOM":
 			if carte.Nom != "" {
 				return Carte{}, fmt.Errorf("%s ligne %d : NOM défini deux fois", nomFichier, i+1)
 			}
@@ -61,7 +63,7 @@ func Charger(chemin string) (Carte, error) {
 				return Carte{}, fmt.Errorf("%s ligne %d : NOM attend un nom", nomFichier, i+1)
 			}
 
-		} else if champs[0] == "DIFFICULTE" {
+		case "DIFFICULTE":
 			if carte.Difficulte != 0 {
 				return Carte{}, fmt.Errorf("%s ligne %d : DIFFICULTE défini deux fois", nomFichier, i+1)
 			}
@@ -74,7 +76,7 @@ func Charger(chemin string) (Carte, error) {
 			}
 			carte.Difficulte = valeur
 
-		} else if champs[0] == "TOURS" {
+		case "TOURS":
 			if carte.Tours != 0 {
 				return Carte{}, fmt.Errorf("%s ligne %d : TOURS défini deux fois", nomFichier, i+1)
 			}
@@ -87,7 +89,7 @@ func Charger(chemin string) (Carte, error) {
 			}
 			carte.Tours = valeur
 
-		} else if champs[0] == "TAILLE" {
+		case "TAILLE":
 			if carte.Largeur != 0 {
 				return Carte{}, fmt.Errorf("%s ligne %d : TAILLE défini deux fois", nomFichier, i+1)
 			}
@@ -105,7 +107,7 @@ func Charger(chemin string) (Carte, error) {
 			carte.Largeur = largeur
 			carte.Hauteur = hauteur
 
-		} else {
+		default:
 			return Carte{}, fmt.Errorf("%s ligne %d : clé inconnue %q", nomFichier, i+1, champs[0])
 		}
 	}
