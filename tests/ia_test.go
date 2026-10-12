@@ -38,6 +38,7 @@ var actions = []casAction{
 	{"brouillard v3", ouverte, protocole.Etat{Moi: protocole.Robot{X: 1, Y: 1, Mun: 1}}, "RADAR"},
 }
 
+// TestActions vérifie les actions choisies par l'IA dans plusieurs situations.
 func TestActions(t *testing.T) {
 	for _, c := range actions {
 		t.Run(c.nom, func(t *testing.T) {

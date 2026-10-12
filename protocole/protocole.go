@@ -42,7 +42,7 @@ func LireBloc(scanner *bufio.Scanner) ([]string, bool) {
 	return nil, false
 }
 
-// Parser transforme les lignes d'un tour en valeurs Go.
+// Parser transforme les lignes reçues en état du jeu.
 func Parser(lignes []string) (Etat, error) {
 	etat := Etat{}
 	vu := map[string]bool{}
@@ -68,6 +68,7 @@ func Parser(lignes []string) (Etat, error) {
 	return etat, nil
 }
 
+// ajouter range une ligne dans la bonne partie de l'état.
 func ajouter(etat *Etat, champs []string) error {
 	switch champs[0] {
 	case "TOUR":
@@ -93,6 +94,7 @@ func ajouter(etat *Etat, champs []string) error {
 	return nil
 }
 
+// lireTour lit et vérifie le numéro du tour.
 func lireTour(champs []string) (int, error) {
 	if len(champs) < 2 {
 		return 0, fmt.Errorf("ligne TOUR invalide")
@@ -104,6 +106,7 @@ func lireTour(champs []string) (int, error) {
 	return n, nil
 }
 
+// lireMoi lit les informations de notre robot.
 func lireMoi(champs []string) (Robot, error) {
 	if len(champs) < 5 || champs[3] != "VIE" {
 		return Robot{}, fmt.Errorf("ligne MOI invalide")
@@ -128,6 +131,7 @@ func lireMoi(champs []string) (Robot, error) {
 	return robot, nil
 }
 
+// lireEnnemi lit les informations de l'ennemi.
 func lireEnnemi(champs []string) (Robot, error) {
 	if len(champs) < 5 || champs[3] != "VIE" {
 		return Robot{}, fmt.Errorf("ligne ENNEMI invalide")
@@ -141,6 +145,7 @@ func lireEnnemi(champs []string) (Robot, error) {
 	return Robot{X: x, Y: y, Vie: vie}, nil
 }
 
+// lireObjet lit les informations d'un objet visible.
 func lireObjet(champs []string) (Objet, error) {
 	if len(champs) < 4 {
 		return Objet{}, fmt.Errorf("ligne OBJET invalide")

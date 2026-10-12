@@ -16,7 +16,7 @@ type Carte struct {
 	Grille     []string
 }
 
-// Charger lit et vérifie un fichier de carte.
+// / Charger lit le fichier de carte et vérifie qu'il est valide.
 func Charger(chemin string) (Carte, error) {
 	contenu, err := os.ReadFile(chemin)
 	if err != nil {
@@ -45,6 +45,7 @@ func Charger(chemin string) (Carte, error) {
 	return c, nil
 }
 
+// nomFichier récupère le nom du fichier sans son chemin.
 func nomFichier(chemin string) string {
 	parties := strings.Split(chemin, "/")
 	nom := parties[len(parties)-1]
@@ -52,6 +53,7 @@ func nomFichier(chemin string) string {
 	return parties[len(parties)-1]
 }
 
+// lireEntete lit les informations avant la grille.
 func lireEntete(lignes []string, nom string) (Carte, int, error) {
 	c := Carte{}
 	for i, ligne := range lignes {
@@ -69,6 +71,7 @@ func lireEntete(lignes []string, nom string) (Carte, int, error) {
 	return c, len(lignes), nil
 }
 
+// lireChamp choisit comment lire une ligne de l'en-tête.
 func lireChamp(c *Carte, champs []string, ligne, nom string, n int) error {
 	switch champs[0] {
 	case "NOM":
@@ -84,6 +87,7 @@ func lireChamp(c *Carte, champs []string, ligne, nom string, n int) error {
 	}
 }
 
+// lireNom lit le nom de la carte.
 func lireNom(c *Carte, ligne, nom string, n int) error {
 	if c.Nom != "" {
 		return fmt.Errorf("%s ligne %d : NOM défini deux fois", nom, n)
@@ -96,6 +100,7 @@ func lireNom(c *Carte, ligne, nom string, n int) error {
 	return nil
 }
 
+// lireDifficulte lit et vérifie la difficulté.
 func lireDifficulte(c *Carte, champs []string, nom string, n int) error {
 	if c.Difficulte != 0 {
 		return fmt.Errorf("%s ligne %d : DIFFICULTE défini deux fois", nom, n)
@@ -111,6 +116,7 @@ func lireDifficulte(c *Carte, champs []string, nom string, n int) error {
 	return nil
 }
 
+// lireTours lit et vérifie le nombre de tours.
 func lireTours(c *Carte, champs []string, nom string, n int) error {
 	if c.Tours != 0 {
 		return fmt.Errorf("%s ligne %d : TOURS défini deux fois", nom, n)
@@ -126,6 +132,7 @@ func lireTours(c *Carte, champs []string, nom string, n int) error {
 	return nil
 }
 
+// lireTaille lit et vérifie la largeur et la hauteur.
 func lireTaille(c *Carte, champs []string, nom string, n int) error {
 	if c.Largeur != 0 {
 		return fmt.Errorf("%s ligne %d : TAILLE défini deux fois", nom, n)
@@ -146,6 +153,7 @@ func lireTaille(c *Carte, champs []string, nom string, n int) error {
 	return nil
 }
 
+// verifierEntete vérifie que toutes les informations obligatoires sont présentes.
 func verifierEntete(c Carte, nom string) error {
 	if c.Nom == "" {
 		return fmt.Errorf("%s : en-tête incomplet : NOM manquant", nom)
@@ -162,6 +170,7 @@ func verifierEntete(c Carte, nom string) error {
 	return nil
 }
 
+// verifierGrille vérifie les lignes et les départs des deux joueurs.
 func verifierGrille(c *Carte, debut int, nom string) error {
 	if len(c.Grille) != c.Hauteur {
 		return fmt.Errorf("%s : %d lignes de grille, %d attendues", nom, len(c.Grille), c.Hauteur)
@@ -181,6 +190,7 @@ func verifierGrille(c *Carte, debut int, nom string) error {
 	return nil
 }
 
+// verifierLigne vérifie la largeur et les cases d'une ligne.
 func verifierLigne(c Carte, ligne string, y, debut int, nom string, depart1, depart2 *int) error {
 	nombreCases := 0
 	for range ligne {
@@ -211,6 +221,7 @@ func verifierLigne(c Carte, ligne string, y, debut int, nom string, depart1, dep
 	return nil
 }
 
+// verifierCase vérifie le symbole et la bordure d'une case.
 func verifierCase(c Carte, symbole rune, y, colonne, debut int, nom string) error {
 	if !symboleValide(symbole) {
 		return fmt.Errorf("%s ligne %d colonne %d : symbole inconnu %q", nom, debut+y+1, colonne, string(symbole))
@@ -221,6 +232,7 @@ func verifierCase(c Carte, symbole rune, y, colonne, debut int, nom string) erro
 	return nil
 }
 
+// symboleValide indique si un symbole est autorisé dans la grille.
 func symboleValide(symbole rune) bool {
 	switch symbole {
 	case '#', '.', '~', '^', '+', '*', '!', '$', '1', '2':

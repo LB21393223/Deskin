@@ -11,6 +11,7 @@ import (
 	"robot/protocole"
 )
 
+// main charge la carte, ouvre le journal et lance le robot.
 func main() {
 	chemin := flag.String("carte", "", "fichier .map")
 	flag.Int("joueur", 1, "numéro du joueur")
@@ -32,6 +33,7 @@ func main() {
 	}
 }
 
+// jouer lit chaque tour, choisit une action et l'envoie à l'arbitre.
 func jouer(c carte.Carte, fichier *os.File) {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)

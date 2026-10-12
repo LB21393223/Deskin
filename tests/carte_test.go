@@ -17,6 +17,7 @@ var cartesInvalides = []casCarte{
 	{"04_taille_petite.map", "04_taille_petite.map ligne 4 : TAILLE trop petite (3 x 3 minimum)"},
 }
 
+// TestCartesInvalides vérifie les erreurs renvoyées pour des cartes invalides.
 func TestCartesInvalides(t *testing.T) {
 	for _, c := range cartesInvalides {
 		t.Run(c.fichier, func(t *testing.T) {

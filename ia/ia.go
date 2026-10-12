@@ -16,6 +16,7 @@ type noeud struct {
 	dist    int
 }
 
+// voisin donne la case voisine dans la direction choisie.
 func voisin(p Pos, direction string) Pos {
 	switch direction {
 	case "N":
@@ -30,6 +31,7 @@ func voisin(p Pos, direction string) Pos {
 	return p
 }
 
+// libre indique si une case est dans la carte et n'est pas un mur.
 func libre(c carte.Carte, p Pos) bool {
 	if p.X < 0 || p.X >= c.Largeur || p.Y < 0 || p.Y >= c.Hauteur {
 		return false
@@ -37,7 +39,7 @@ func libre(c carte.Carte, p Pos) bool {
 	return c.Grille[p.Y][p.X] != '#'
 }
 
-// PremierPas cherche le premier mouvement d'un plus court chemin.
+// PremierPas cherche le premier déplacement d'un plus court chemin.
 func PremierPas(c carte.Carte, depart, cible Pos) (string, int) {
 	if !libre(c, depart) || !libre(c, cible) {
 		return "", -1
@@ -69,6 +71,7 @@ func PremierPas(c carte.Carte, depart, cible Pos) (string, int) {
 	return "", -1
 }
 
+// tirer indique dans quelle direction tirer si l'ennemi est à portée.
 func tirer(c carte.Carte, moi, ennemi protocole.Robot) string {
 	depart := Pos{moi.X, moi.Y}
 	cible := Pos{ennemi.X, ennemi.Y}
@@ -87,6 +90,7 @@ func tirer(c carte.Carte, moi, ennemi protocole.Robot) string {
 	return ""
 }
 
+// versObjet cherche le chemin vers l'objet le plus proche du type demandé.
 func versObjet(c carte.Carte, depart Pos, objets []protocole.Objet, typeObjet string) string {
 	meilleureDistance := 0
 	meilleureDirection := ""
@@ -106,7 +110,7 @@ func versObjet(c carte.Carte, depart Pos, objets []protocole.Objet, typeObjet st
 	return "AVANCE " + meilleureDirection
 }
 
-// Decider choisit une action simple à partir de la carte et de l'état du tour.
+// Decider choisit l'action du robot pour ce tour.
 func Decider(c carte.Carte, etat protocole.Etat) string {
 	depart := Pos{etat.Moi.X, etat.Moi.Y}
 	if etat.EnnemiVisible && etat.Moi.Mun > 0 {
