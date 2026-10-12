@@ -5,7 +5,16 @@ import (
 	"robot/protocole"
 )
 
-type Pos struct{ X, Y int }
+type Pos struct {
+	X int
+	Y int
+}
+
+type noeud struct {
+	p       Pos
+	premier string
+	dist    int
+}
 
 func voisin(p Pos, direction string) Pos {
 	switch direction {
@@ -35,11 +44,6 @@ func PremierPas(c carte.Carte, depart, cible Pos) (string, int) {
 	}
 	if depart == cible {
 		return "", 0
-	}
-	type noeud struct {
-		p       Pos
-		premier string
-		dist    int
 	}
 	vu := map[Pos]bool{depart: true}
 	file := []noeud{{depart, "", 0}}

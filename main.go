@@ -15,20 +15,24 @@ func main() {
 	chemin := flag.String("carte", "", "fichier .map")
 	flag.Int("joueur", 1, "numéro du joueur")
 	flag.Parse()
-
 	c, err := carte.Charger(*chemin)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	fichier, err := os.Create("partie.log")
+	fichier, err := journal.Ouvrir("partie.log")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-	} else {
-		defer fichier.Close()
 	}
+	jouer(c, fichier)
+	if fichier != nil {
+		if err := journal.Fermer(fichier); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
+}
 
+func jouer(c carte.Carte, fichier *os.File) {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	for {

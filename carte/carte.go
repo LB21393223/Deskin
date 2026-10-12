@@ -22,157 +22,209 @@ func Charger(chemin string) (Carte, error) {
 	if err != nil {
 		return Carte{}, err
 	}
-
+	nom := nomFichier(chemin)
 	texte := strings.ReplaceAll(string(contenu), "\r\n", "\n")
 	lignes := strings.Split(texte, "\n")
 	for len(lignes) > 0 && lignes[len(lignes)-1] == "" {
 		lignes = lignes[:len(lignes)-1]
 	}
-
-	parties := strings.Split(chemin, "/")
-	nomFichier := parties[len(parties)-1]
-	parties = strings.Split(nomFichier, "\\")
-	nomFichier = parties[len(parties)-1]
-
 	if len(lignes) == 0 {
-		return Carte{}, fmt.Errorf("%s : fichier vide", nomFichier)
+		return Carte{}, fmt.Errorf("%s : fichier vide", nom)
 	}
+	c, debut, err := lireEntete(lignes, nom)
+	if err != nil {
+		return Carte{}, err
+	}
+	if err := verifierEntete(c, nom); err != nil {
+		return Carte{}, err
+	}
+	c.Grille = lignes[debut:]
+	if err := verifierGrille(&c, debut, nom); err != nil {
+		return Carte{}, err
+	}
+	return c, nil
+}
 
-	carte := Carte{}
-	debutGrille := len(lignes)
+func nomFichier(chemin string) string {
+	parties := strings.Split(chemin, "/")
+	nom := parties[len(parties)-1]
+	parties = strings.Split(nom, "\\")
+	return parties[len(parties)-1]
+}
 
+func lireEntete(lignes []string, nom string) (Carte, int, error) {
+	c := Carte{}
 	for i, ligne := range lignes {
 		if strings.HasPrefix(ligne, "#") {
-			debutGrille = i
-			break
+			return c, i, nil
 		}
-
 		champs := strings.Fields(ligne)
 		if len(champs) == 0 {
 			continue
 		}
-
-		switch champs[0] {
-		case "NOM":
-			if carte.Nom != "" {
-				return Carte{}, fmt.Errorf("%s ligne %d : NOM défini deux fois", nomFichier, i+1)
-			}
-			lignePropre := strings.TrimSpace(ligne)
-			carte.Nom = strings.TrimSpace(lignePropre[3:])
-			if carte.Nom == "" {
-				return Carte{}, fmt.Errorf("%s ligne %d : NOM attend un nom", nomFichier, i+1)
-			}
-
-		case "DIFFICULTE":
-			if carte.Difficulte != 0 {
-				return Carte{}, fmt.Errorf("%s ligne %d : DIFFICULTE défini deux fois", nomFichier, i+1)
-			}
-			if len(champs) != 2 {
-				return Carte{}, fmt.Errorf("%s ligne %d : DIFFICULTE attend un entier entre 1 et 3", nomFichier, i+1)
-			}
-			valeur, err := strconv.Atoi(champs[1])
-			if err != nil || valeur < 1 || valeur > 3 {
-				return Carte{}, fmt.Errorf("%s ligne %d : DIFFICULTE attend un entier entre 1 et 3", nomFichier, i+1)
-			}
-			carte.Difficulte = valeur
-
-		case "TOURS":
-			if carte.Tours != 0 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TOURS défini deux fois", nomFichier, i+1)
-			}
-			if len(champs) != 2 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TOURS attend un entier positif", nomFichier, i+1)
-			}
-			valeur, err := strconv.Atoi(champs[1])
-			if err != nil || valeur <= 0 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TOURS attend un entier positif", nomFichier, i+1)
-			}
-			carte.Tours = valeur
-
-		case "TAILLE":
-			if carte.Largeur != 0 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TAILLE défini deux fois", nomFichier, i+1)
-			}
-			if len(champs) != 3 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TAILLE attend deux entiers", nomFichier, i+1)
-			}
-			largeur, errLargeur := strconv.Atoi(champs[1])
-			hauteur, errHauteur := strconv.Atoi(champs[2])
-			if errLargeur != nil || errHauteur != nil {
-				return Carte{}, fmt.Errorf("%s ligne %d : TAILLE attend deux entiers", nomFichier, i+1)
-			}
-			if largeur < 3 || hauteur < 3 {
-				return Carte{}, fmt.Errorf("%s ligne %d : TAILLE trop petite (3 x 3 minimum)", nomFichier, i+1)
-			}
-			carte.Largeur = largeur
-			carte.Hauteur = hauteur
-
-		default:
-			return Carte{}, fmt.Errorf("%s ligne %d : clé inconnue %q", nomFichier, i+1, champs[0])
+		if err := lireChamp(&c, champs, ligne, nom, i+1); err != nil {
+			return Carte{}, 0, err
 		}
 	}
+	return c, len(lignes), nil
+}
 
-	if carte.Nom == "" {
-		return Carte{}, fmt.Errorf("%s : en-tête incomplet : NOM manquant", nomFichier)
+func lireChamp(c *Carte, champs []string, ligne, nom string, n int) error {
+	switch champs[0] {
+	case "NOM":
+		return lireNom(c, ligne, nom, n)
+	case "DIFFICULTE":
+		return lireDifficulte(c, champs, nom, n)
+	case "TOURS":
+		return lireTours(c, champs, nom, n)
+	case "TAILLE":
+		return lireTaille(c, champs, nom, n)
+	default:
+		return fmt.Errorf("%s ligne %d : clé inconnue %q", nom, n, champs[0])
 	}
-	if carte.Difficulte == 0 {
-		return Carte{}, fmt.Errorf("%s : en-tête incomplet : DIFFICULTE manquant", nomFichier)
-	}
-	if carte.Tours == 0 {
-		return Carte{}, fmt.Errorf("%s : en-tête incomplet : TOURS manquant", nomFichier)
-	}
-	if carte.Largeur == 0 {
-		return Carte{}, fmt.Errorf("%s : en-tête incomplet : TAILLE manquant", nomFichier)
-	}
+}
 
-	carte.Grille = lignes[debutGrille:]
-	if len(carte.Grille) != carte.Hauteur {
-		return Carte{}, fmt.Errorf("%s : %d lignes de grille, %d attendues", nomFichier, len(carte.Grille), carte.Hauteur)
+func lireNom(c *Carte, ligne, nom string, n int) error {
+	if c.Nom != "" {
+		return fmt.Errorf("%s ligne %d : NOM défini deux fois", nom, n)
 	}
+	lignePropre := strings.TrimSpace(ligne)
+	c.Nom = strings.TrimSpace(lignePropre[3:])
+	if c.Nom == "" {
+		return fmt.Errorf("%s ligne %d : NOM attend un nom", nom, n)
+	}
+	return nil
+}
 
-	depart1 := 0
-	depart2 := 0
+func lireDifficulte(c *Carte, champs []string, nom string, n int) error {
+	if c.Difficulte != 0 {
+		return fmt.Errorf("%s ligne %d : DIFFICULTE défini deux fois", nom, n)
+	}
+	if len(champs) != 2 {
+		return fmt.Errorf("%s ligne %d : DIFFICULTE attend un entier entre 1 et 3", nom, n)
+	}
+	valeur, err := strconv.Atoi(champs[1])
+	if err != nil || valeur < 1 || valeur > 3 {
+		return fmt.Errorf("%s ligne %d : DIFFICULTE attend un entier entre 1 et 3", nom, n)
+	}
+	c.Difficulte = valeur
+	return nil
+}
 
-	for y, ligne := range carte.Grille {
-		nombreCases := 0
-		for range ligne {
-			nombreCases++
+func lireTours(c *Carte, champs []string, nom string, n int) error {
+	if c.Tours != 0 {
+		return fmt.Errorf("%s ligne %d : TOURS défini deux fois", nom, n)
+	}
+	if len(champs) != 2 {
+		return fmt.Errorf("%s ligne %d : TOURS attend un entier positif", nom, n)
+	}
+	valeur, err := strconv.Atoi(champs[1])
+	if err != nil || valeur <= 0 {
+		return fmt.Errorf("%s ligne %d : TOURS attend un entier positif", nom, n)
+	}
+	c.Tours = valeur
+	return nil
+}
+
+func lireTaille(c *Carte, champs []string, nom string, n int) error {
+	if c.Largeur != 0 {
+		return fmt.Errorf("%s ligne %d : TAILLE défini deux fois", nom, n)
+	}
+	if len(champs) != 3 {
+		return fmt.Errorf("%s ligne %d : TAILLE attend deux entiers", nom, n)
+	}
+	largeur, e1 := strconv.Atoi(champs[1])
+	hauteur, e2 := strconv.Atoi(champs[2])
+	if e1 != nil || e2 != nil {
+		return fmt.Errorf("%s ligne %d : TAILLE attend deux entiers", nom, n)
+	}
+	if largeur < 3 || hauteur < 3 {
+		return fmt.Errorf("%s ligne %d : TAILLE trop petite (3 x 3 minimum)", nom, n)
+	}
+	c.Largeur = largeur
+	c.Hauteur = hauteur
+	return nil
+}
+
+func verifierEntete(c Carte, nom string) error {
+	if c.Nom == "" {
+		return fmt.Errorf("%s : en-tête incomplet : NOM manquant", nom)
+	}
+	if c.Difficulte == 0 {
+		return fmt.Errorf("%s : en-tête incomplet : DIFFICULTE manquant", nom)
+	}
+	if c.Tours == 0 {
+		return fmt.Errorf("%s : en-tête incomplet : TOURS manquant", nom)
+	}
+	if c.Largeur == 0 {
+		return fmt.Errorf("%s : en-tête incomplet : TAILLE manquant", nom)
+	}
+	return nil
+}
+
+func verifierGrille(c *Carte, debut int, nom string) error {
+	if len(c.Grille) != c.Hauteur {
+		return fmt.Errorf("%s : %d lignes de grille, %d attendues", nom, len(c.Grille), c.Hauteur)
+	}
+	depart1, depart2 := 0, 0
+	for y, ligne := range c.Grille {
+		if err := verifierLigne(*c, ligne, y, debut, nom, &depart1, &depart2); err != nil {
+			return err
 		}
-		if nombreCases != carte.Largeur {
-			return Carte{}, fmt.Errorf("%s ligne %d : %d cases, %d attendues", nomFichier, debutGrille+y+1, nombreCases, carte.Largeur)
-		}
-
-		colonne := 0
-		for _, symbole := range ligne {
-			colonne++
-
-			if symbole != '#' && symbole != '.' && symbole != '~' && symbole != '^' && symbole != '+' && symbole != '*' && symbole != '!' && symbole != '$' && symbole != '1' && symbole != '2' {
-				return Carte{}, fmt.Errorf("%s ligne %d colonne %d : symbole inconnu %q", nomFichier, debutGrille+y+1, colonne, string(symbole))
-			}
-			if (y == 0 || y == carte.Hauteur-1 || colonne == 1 || colonne == carte.Largeur) && symbole != '#' {
-				return Carte{}, fmt.Errorf("%s ligne %d colonne %d : la bordure doit être un mur", nomFichier, debutGrille+y+1, colonne)
-			}
-			if symbole == '1' {
-				depart1++
-				if depart1 > 1 {
-					return Carte{}, fmt.Errorf("%s ligne %d colonne %d : départ du joueur 1 déjà défini", nomFichier, debutGrille+y+1, colonne)
-				}
-			}
-			if symbole == '2' {
-				depart2++
-				if depart2 > 1 {
-					return Carte{}, fmt.Errorf("%s ligne %d colonne %d : départ du joueur 2 déjà défini", nomFichier, debutGrille+y+1, colonne)
-				}
-			}
-		}
 	}
-
 	if depart1 == 0 {
-		return Carte{}, fmt.Errorf("%s : aucun départ pour le joueur 1", nomFichier)
+		return fmt.Errorf("%s : aucun départ pour le joueur 1", nom)
 	}
 	if depart2 == 0 {
-		return Carte{}, fmt.Errorf("%s : aucun départ pour le joueur 2", nomFichier)
+		return fmt.Errorf("%s : aucun départ pour le joueur 2", nom)
 	}
+	return nil
+}
 
-	return carte, nil
+func verifierLigne(c Carte, ligne string, y, debut int, nom string, depart1, depart2 *int) error {
+	nombreCases := 0
+	for range ligne {
+		nombreCases++
+	}
+	if nombreCases != c.Largeur {
+		return fmt.Errorf("%s ligne %d : %d cases, %d attendues", nom, debut+y+1, nombreCases, c.Largeur)
+	}
+	colonne := 0
+	for _, symbole := range ligne {
+		colonne++
+		if err := verifierCase(c, symbole, y, colonne, debut, nom); err != nil {
+			return err
+		}
+		if symbole == '1' {
+			*depart1 = *depart1 + 1
+			if *depart1 > 1 {
+				return fmt.Errorf("%s ligne %d colonne %d : départ du joueur 1 déjà défini", nom, debut+y+1, colonne)
+			}
+		}
+		if symbole == '2' {
+			*depart2 = *depart2 + 1
+			if *depart2 > 1 {
+				return fmt.Errorf("%s ligne %d colonne %d : départ du joueur 2 déjà défini", nom, debut+y+1, colonne)
+			}
+		}
+	}
+	return nil
+}
+
+func verifierCase(c Carte, symbole rune, y, colonne, debut int, nom string) error {
+	if !symboleValide(symbole) {
+		return fmt.Errorf("%s ligne %d colonne %d : symbole inconnu %q", nom, debut+y+1, colonne, string(symbole))
+	}
+	if (y == 0 || y == c.Hauteur-1 || colonne == 1 || colonne == c.Largeur) && symbole != '#' {
+		return fmt.Errorf("%s ligne %d colonne %d : la bordure doit être un mur", nom, debut+y+1, colonne)
+	}
+	return nil
+}
+
+func symboleValide(symbole rune) bool {
+	switch symbole {
+	case '#', '.', '~', '^', '+', '*', '!', '$', '1', '2':
+		return true
+	}
+	return false
 }

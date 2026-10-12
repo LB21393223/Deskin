@@ -6,6 +6,11 @@ import (
 	"robot/protocole"
 )
 
+// Ouvrir crée le fichier du journal.
+func Ouvrir(chemin string) (*os.File, error) {
+	return os.Create(chemin)
+}
+
 // Ecrire ajoute une ligne lisible au journal de la partie.
 func Ecrire(fichier *os.File, etat protocole.Etat, action string) error {
 	if !etat.EnnemiVisible {
@@ -17,4 +22,9 @@ func Ecrire(fichier *os.File, etat protocole.Etat, action string) error {
 		etat.Tour, etat.Moi.X, etat.Moi.Y, etat.Moi.Vie,
 		etat.Ennemi.X, etat.Ennemi.Y, etat.Ennemi.Vie, action)
 	return err
+}
+
+// Fermer ferme le fichier du journal.
+func Fermer(fichier *os.File) error {
+	return fichier.Close()
 }
