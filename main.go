@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"robot/carte"
 	"robot/ia"
+	"robot/journal"
 	"robot/protocole"
 )
 
@@ -13,10 +15,6 @@ func main() {
 	chemin := flag.String("carte", "", "fichier .map")
 	flag.Int("joueur", 1, "numéro du joueur")
 	flag.Parse()
-	if *chemin == "" {
-		fmt.Fprintln(os.Stderr, "indiquez --carte fichier.map")
-		os.Exit(1)
-	}
 
 	c, err := carte.Charger(*chemin)
 	if err != nil {
@@ -24,9 +22,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	lecteur := protocole.NouveauLecteur(os.Stdin)
+	fichier, err := os.Create("partie.log")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	} else {
+		defer fichier.Close()
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	for {
-		lignes, ok := lecteur.Suivant()
+		lignes, ok := protocole.LireBloc(scanner)
 		if !ok {
 			break
 		}
@@ -36,9 +42,15 @@ func main() {
 			fmt.Println("ATTENDS")
 			continue
 		}
-		fmt.Println(ia.Decider(c, etat))
+		action := ia.Decider(c, etat)
+		fmt.Println(action)
+		if fichier != nil {
+			if err := journal.Ecrire(fichier, etat, action); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		}
 	}
-	if err := lecteur.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }

@@ -105,7 +105,7 @@ func versObjet(c carte.Carte, depart Pos, objets []protocole.Objet, typeObjet st
 // Decider choisit une action simple à partir de la carte et de l'état du tour.
 func Decider(c carte.Carte, etat protocole.Etat) string {
 	depart := Pos{etat.Moi.X, etat.Moi.Y}
-	if etat.Moi.Mun > 0 {
+	if etat.EnnemiVisible && etat.Moi.Mun > 0 {
 		if action := tirer(c, etat.Moi, etat.Ennemi); action != "" {
 			return action
 		}
@@ -122,6 +122,9 @@ func Decider(c carte.Carte, etat protocole.Etat) string {
 		if action := versObjet(c, depart, etat.Objets, "TRESOR"); action != "" {
 			return action
 		}
+	}
+	if !etat.EnnemiVisible {
+		return "RADAR"
 	}
 	direction, distance := PremierPas(c, depart, Pos{etat.Ennemi.X, etat.Ennemi.Y})
 	if distance > 1 {
